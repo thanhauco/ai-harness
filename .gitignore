@@ -1,0 +1,20 @@
+# Binaries
+/bin/
+*.exe
+*.test
+*.out
+
+# Go cache
+.cache/
+
+# OS / Editor
+.DS_Store
+.vscode/
+.idea/
+*.swp
+
+# Coverage and profiles
+coverage.txt
+profile.pprof
+cpu.prof
+mem.prof
