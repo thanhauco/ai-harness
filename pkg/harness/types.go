@@ -37,3 +37,38 @@ type Prompt struct {
 	StopWords   []string       `json:"stop_words,omitempty"`
 	Options     map[string]any `json:"options,omitempty"`
 }
+
+import (
+	"errors"
+	"fmt"
+	"time"
+)
+
+// HarnessError is a structured error containing error classification and retry metadata.
+type HarnessError struct {
+	Code      string `json:"code"`
+	Message   string `json:"message"`
+	Retryable bool   `json:"retryable"`
+	Err       error  `json:"-"`
+}
+
+func (e *HarnessError) Error() string {
+	if e.Err != nil {
+		return fmt.Sprintf("[%s] %s: %v", e.Code, e.Message, e.Err)
+	}
+	return fmt.Sprintf("[%s] %s", e.Code, e.Message)
+}
+
+func (e *HarnessError) Unwrap() error {
+	return e.Err
+}
+
+// Predefined harness sentinel errors.
+var (
+	ErrContextCanceled  = errors.New("operation canceled by context")
+	ErrRateLimited      = &HarnessError{Code: "RATE_LIMITED", Message: "rate limit exceeded", Retryable: true}
+	ErrCircuitOpen      = &HarnessError{Code: "CIRCUIT_OPEN", Message: "circuit breaker is open", Retryable: true}
+	ErrTimeout          = &HarnessError{Code: "TIMEOUT", Message: "request timed out", Retryable: true}
+	ErrProviderFailed   = &HarnessError{Code: "PROVIDER_FAILED", Message: "upstream model provider failed", Retryable: true}
+	ErrValidationFailed = &HarnessError{Code: "VALIDATION_FAILED", Message: "input or schema validation failed", Retryable: false}
+)
