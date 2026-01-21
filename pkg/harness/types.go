@@ -1,5 +1,11 @@
 package harness
 
+import (
+	"errors"
+	"fmt"
+	"time"
+)
+
 // Role defines the participant role in a conversation.
 type Role string
 
@@ -9,6 +15,15 @@ const (
 	RoleAssistant Role = "assistant"
 	RoleTool      Role = "tool"
 )
+
+func (r Role) IsValid() bool {
+	switch r {
+	case RoleSystem, RoleUser, RoleAssistant, RoleTool:
+		return true
+	default:
+		return false
+	}
+}
 
 // Message represents a single conversational turn.
 type Message struct {
@@ -37,12 +52,6 @@ type Prompt struct {
 	StopWords   []string       `json:"stop_words,omitempty"`
 	Options     map[string]any `json:"options,omitempty"`
 }
-
-import (
-	"errors"
-	"fmt"
-	"time"
-)
 
 // HarnessError is a structured error containing error classification and retry metadata.
 type HarnessError struct {
