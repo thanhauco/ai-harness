@@ -81,3 +81,28 @@ var (
 	ErrProviderFailed   = &HarnessError{Code: "PROVIDER_FAILED", Message: "upstream model provider failed", Retryable: true}
 	ErrValidationFailed = &HarnessError{Code: "VALIDATION_FAILED", Message: "input or schema validation failed", Retryable: false}
 )
+
+// Helper constructors
+func NewSystemMessage(content string) Message {
+	return Message{Role: RoleSystem, Content: content}
+}
+
+func NewUserMessage(content string) Message {
+	return Message{Role: RoleUser, Content: content}
+}
+
+func NewAssistantMessage(content string) Message {
+	return Message{Role: RoleAssistant, Content: content}
+}
+
+func NewToolMessage(toolCallID, content string) Message {
+	return Message{Role: RoleTool, ToolCallID: toolCallID, Content: content}
+}
+
+func NewPrompt(messages ...Message) *Prompt {
+	return &Prompt{
+		Messages:    messages,
+		Temperature: 0.7,
+		MaxTokens:   2048,
+	}
+}
