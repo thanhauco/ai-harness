@@ -1,6 +1,7 @@
 package harness
 
 import (
+	"encoding/json"
 	"errors"
 	"testing"
 )
@@ -34,5 +35,16 @@ func TestTokenUsage_Calculation(t *testing.T) {
 
 	if u.TotalTokens != u.PromptTokens+u.CompletionTokens {
 		t.Fatalf("token mismatch: %d != %d", u.TotalTokens, u.PromptTokens+u.CompletionTokens)
+	}
+}
+
+func BenchmarkMessage_JSONMarshal(b *testing.B) {
+	msg := NewUserMessage("Benchmark message payload for token simulation and serialization testing.")
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, err := json.Marshal(msg)
+		if err != nil {
+			b.Fatal(err)
+		}
 	}
 }
