@@ -30,3 +30,22 @@ func (s *ExecutionState) Get(key string) (any, bool) {
 	val, ok := s.data[key]
 	return val, ok
 }
+
+func (s *ExecutionState) GetString(key string) (string, bool) {
+	v, ok := s.Get(key)
+	if !ok {
+		return "", false
+	}
+	str, ok := v.(string)
+	return str, ok
+}
+
+func (s *ExecutionState) Keys() []string {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	keys := make([]string, 0, len(s.data))
+	for k := range s.data {
+		keys = append(keys, k)
+	}
+	return keys
+}
