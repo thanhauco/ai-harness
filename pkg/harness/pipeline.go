@@ -49,3 +49,13 @@ func (s *ExecutionState) Keys() []string {
 	}
 	return keys
 }
+
+type StepStatus string
+
+const (
+	StepPending   StepStatus = "pending"
+	StepRunning   StepStatus = "running"
+	StepCompleted StepStatus = "completed"
+	StepFailed    StepStatus = "failed"
+	StepSkipped   StepStatus = "skipped"
+)
