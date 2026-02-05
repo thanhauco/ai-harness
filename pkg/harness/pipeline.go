@@ -59,3 +59,14 @@ const (
 	StepFailed    StepStatus = "failed"
 	StepSkipped   StepStatus = "skipped"
 )
+
+// StepRecord captures execution telemetry for a single pipeline step.
+type StepRecord struct {
+	StepID     string        `json:"step_id"`
+	Status     StepStatus    `json:"status"`
+	Output     any           `json:"output,omitempty"`
+	Error      string        `json:"error,omitempty"`
+	Duration   time.Duration `json:"duration"`
+	StartedAt  time.Time     `json:"started_at"`
+	FinishedAt time.Time     `json:"finished_at"`
+}
