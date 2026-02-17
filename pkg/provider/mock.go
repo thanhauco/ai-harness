@@ -12,6 +12,7 @@ import (
 type MockProvider struct {
 	name          string
 	fixedResponse string
+	latency       time.Duration
 	callCount     atomic.Int64
 }
 
@@ -25,6 +26,10 @@ func NewMockProvider(name, fixedResponse string) *MockProvider {
 	}
 }
 
+func (m *MockProvider) SetLatency(d time.Duration) {
+	m.latency = d
+}
+
 func (m *MockProvider) Name() string {
 	return m.name
 }
@@ -35,6 +40,15 @@ func (m *MockProvider) CallCount() int64 {
 
 func (m *MockProvider) Generate(ctx context.Context, prompt *harness.Prompt) (*harness.Response, error) {
 	m.callCount.Add(1)
+
+	if m.latency > 0 {
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(m.latency):
+		}
+	}
+
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
@@ -47,7 +61,7 @@ func (m *MockProvider) Generate(ctx context.Context, prompt *harness.Prompt) (*h
 			PromptTokens:     10,
 			CompletionTokens: len(m.fixedResponse) / 4,
 			TotalTokens:      10 + len(m.fixedResponse)/4,
-			DurationMs:       5,
+			DurationMs:       m.latency.Milliseconds(),
 		},
 		FinishReason: harness.FinishStop,
 		CreatedAt:    time.Now(),
