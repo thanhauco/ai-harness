@@ -13,6 +13,8 @@ type MockProvider struct {
 	name          string
 	fixedResponse string
 	latency       time.Duration
+	promptTokens  int
+	complTokens   int
 	callCount     atomic.Int64
 }
 
@@ -23,7 +25,14 @@ func NewMockProvider(name, fixedResponse string) *MockProvider {
 	return &MockProvider{
 		name:          name,
 		fixedResponse: fixedResponse,
+		promptTokens:  12,
+		complTokens:   len(fixedResponse) / 4,
 	}
+}
+
+func (m *MockProvider) SetTokens(prompt, compl int) {
+	m.promptTokens = prompt
+	m.complTokens = compl
 }
 
 func (m *MockProvider) SetLatency(d time.Duration) {
@@ -58,9 +67,9 @@ func (m *MockProvider) Generate(ctx context.Context, prompt *harness.Prompt) (*h
 		Model:   m.name,
 		Content: m.fixedResponse,
 		Usage: harness.TokenUsage{
-			PromptTokens:     10,
-			CompletionTokens: len(m.fixedResponse) / 4,
-			TotalTokens:      10 + len(m.fixedResponse)/4,
+			PromptTokens:     m.promptTokens,
+			CompletionTokens: m.complTokens,
+			TotalTokens:      m.promptTokens + m.complTokens,
 			DurationMs:       m.latency.Milliseconds(),
 		},
 		FinishReason: harness.FinishStop,
