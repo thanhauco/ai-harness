@@ -2,6 +2,8 @@ package provider
 
 import (
 	"context"
+	"iter"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -13,6 +15,7 @@ type MockProvider struct {
 	name          string
 	fixedResponse string
 	latency       time.Duration
+	chunkDelay    time.Duration
 	promptTokens  int
 	complTokens   int
 	callCount     atomic.Int64
@@ -37,6 +40,10 @@ func (m *MockProvider) SetTokens(prompt, compl int) {
 
 func (m *MockProvider) SetLatency(d time.Duration) {
 	m.latency = d
+}
+
+func (m *MockProvider) SetChunkDelay(d time.Duration) {
+	m.chunkDelay = d
 }
 
 func (m *MockProvider) Name() string {
@@ -75,4 +82,48 @@ func (m *MockProvider) Generate(ctx context.Context, prompt *harness.Prompt) (*h
 		FinishReason: harness.FinishStop,
 		CreatedAt:    time.Now(),
 	}, nil
+}
+
+func (m *MockProvider) Stream(ctx context.Context, prompt *harness.Prompt) iter.Seq2[StreamChunk, error] {
+	return func(yield func(StreamChunk, error) bool) {
+		m.callCount.Add(1)
+		words := strings.Split(m.fixedResponse, " ")
+
+		for i, word := range words {
+			if m.chunkDelay > 0 {
+				select {
+				case <-ctx.Done():
+					yield(StreamChunk{}, ctx.Err())
+					return
+				case <-time.After(m.chunkDelay):
+				}
+			}
+
+			if ctx.Err() != nil {
+				yield(StreamChunk{}, ctx.Err())
+				return
+			}
+
+			delta := word
+			if i < len(words)-1 {
+				delta += " "
+			}
+
+			chunk := StreamChunk{
+				Delta: delta,
+			}
+			if i == len(words)-1 {
+				chunk.FinishReason = harness.FinishStop
+				chunk.Usage = &harness.TokenUsage{
+					PromptTokens:     m.promptTokens,
+					CompletionTokens: len(words),
+					TotalTokens:      m.promptTokens + len(words),
+				}
+			}
+
+			if !yield(chunk, nil) {
+				return
+			}
+		}
+	}
 }
