@@ -33,3 +33,23 @@ func TestMockProvider_Stream(t *testing.T) {
 		t.Fatalf("expected finish reason stop, got %s", lastChunk.FinishReason)
 	}
 }
+
+func TestMockProvider_StreamCancellation(t *testing.T) {
+	p := NewMockProvider("test-mock", "Word1 Word2 Word3 Word4 Word5")
+	p.SetChunkDelay(50 * time.Millisecond)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 25*time.Millisecond)
+	defer cancel()
+
+	var gotError bool
+	for _, err := range p.Stream(ctx, harness.NewPrompt()) {
+		if err != nil {
+			gotError = true
+			break
+		}
+	}
+
+	if !gotError {
+		t.Fatal("expected cancellation error in stream iterator")
+	}
+}
