@@ -18,6 +18,7 @@ type MockProvider struct {
 	chunkDelay    time.Duration
 	promptTokens  int
 	complTokens   int
+	injectedErr   error
 	callCount     atomic.Int64
 }
 
@@ -31,6 +32,10 @@ func NewMockProvider(name, fixedResponse string) *MockProvider {
 		promptTokens:  12,
 		complTokens:   len(fixedResponse) / 4,
 	}
+}
+
+func (m *MockProvider) SetError(err error) {
+	m.injectedErr = err
 }
 
 func (m *MockProvider) SetTokens(prompt, compl int) {
@@ -56,6 +61,10 @@ func (m *MockProvider) CallCount() int64 {
 
 func (m *MockProvider) Generate(ctx context.Context, prompt *harness.Prompt) (*harness.Response, error) {
 	m.callCount.Add(1)
+
+	if m.injectedErr != nil {
+		return nil, m.injectedErr
+	}
 
 	if m.latency > 0 {
 		select {
@@ -87,6 +96,12 @@ func (m *MockProvider) Generate(ctx context.Context, prompt *harness.Prompt) (*h
 func (m *MockProvider) Stream(ctx context.Context, prompt *harness.Prompt) iter.Seq2[StreamChunk, error] {
 	return func(yield func(StreamChunk, error) bool) {
 		m.callCount.Add(1)
+
+		if m.injectedErr != nil {
+			yield(StreamChunk{}, m.injectedErr)
+			return
+		}
+
 		words := strings.Split(m.fixedResponse, " ")
 
 		for i, word := range words {
