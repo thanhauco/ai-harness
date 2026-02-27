@@ -53,3 +53,14 @@ func TestMockProvider_StreamCancellation(t *testing.T) {
 		t.Fatal("expected cancellation error in stream iterator")
 	}
 }
+
+func TestMockProvider_ErrorInjection(t *testing.T) {
+	p := NewMockProvider("test-mock", "Ignored output")
+	expectedErr := errors.New("upstream service unavailable")
+	p.SetError(expectedErr)
+
+	_, err := p.Generate(context.Background(), harness.NewPrompt())
+	if !errors.Is(err, expectedErr) {
+		t.Fatalf("expected %v, got %v", expectedErr, err)
+	}
+}
