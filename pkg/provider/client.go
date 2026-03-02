@@ -27,3 +27,23 @@ func DefaultClientOptions() ClientOptions {
 		},
 	}
 }
+
+// HTTPProvider communicates with remote LLM HTTP API endpoints.
+type HTTPProvider struct {
+	name string
+	opts ClientOptions
+}
+
+func NewHTTPProvider(name string, opts ClientOptions) *HTTPProvider {
+	if opts.HTTPClient == nil {
+		opts = DefaultClientOptions()
+	}
+	return &HTTPProvider{
+		name: name,
+		opts: opts,
+	}
+}
+
+func (h *HTTPProvider) Name() string {
+	return h.name
+}
