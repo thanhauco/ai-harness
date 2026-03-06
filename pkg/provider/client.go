@@ -140,3 +140,96 @@ func (h *HTTPProvider) Generate(ctx context.Context, prompt *harness.Prompt) (*h
 		CreatedAt:    time.Now(),
 	}, nil
 }
+
+import (
+	"bufio"
+	"iter"
+	"strings"
+)
+
+type openAIStreamChunk struct {
+	Choices []struct {
+		Delta struct {
+			Content string `json:"content"`
+		} `json:"delta"`
+		FinishReason string `json:"finish_reason"`
+	} `json:"choices"`
+}
+
+func (h *HTTPProvider) Stream(ctx context.Context, prompt *harness.Prompt) iter.Seq2[StreamChunk, error] {
+	return func(yield func(StreamChunk, error) bool) {
+		reqBody := openAIChatRequest{
+			Model:       prompt.Model,
+			Messages:    prompt.Messages,
+			Temperature: prompt.Temperature,
+			MaxTokens:   prompt.MaxTokens,
+			Stream:      true,
+		}
+
+		payload, err := json.Marshal(reqBody)
+		if err != nil {
+			yield(StreamChunk{}, fmt.Errorf("marshal stream request: %w", err))
+			return
+		}
+
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, h.opts.BaseURL+"/chat/completions", bytes.NewReader(payload))
+		if err != nil {
+			yield(StreamChunk{}, fmt.Errorf("create stream request: %w", err))
+			return
+		}
+
+		req.Header.Set("Content-Type", "application/json")
+		if h.opts.APIKey != "" {
+			req.Header.Set("Authorization", "Bearer "+h.opts.APIKey)
+		}
+
+		resp, err := h.opts.HTTPClient.Do(req)
+		if err != nil {
+			yield(StreamChunk{}, fmt.Errorf("execute stream request: %w", err))
+			return
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			body, _ := io.ReadAll(resp.Body)
+			yield(StreamChunk{}, fmt.Errorf("upstream stream error (%d): %s", resp.StatusCode, string(body)))
+			return
+		}
+
+		scanner := bufio.NewScanner(resp.Body)
+		for scanner.Scan() {
+			if ctx.Err() != nil {
+				yield(StreamChunk{}, ctx.Err())
+				return
+			}
+
+			line := strings.TrimSpace(scanner.Text())
+			if line == "" || strings.HasPrefix(line, ":") {
+				continue
+			}
+
+			if line == "data: [DONE]" {
+				yield(StreamChunk{FinishReason: harness.FinishStop}, nil)
+				return
+			}
+
+			if strings.HasPrefix(line, "data: ") {
+				dataStr := strings.TrimPrefix(line, "data: ")
+				var chunk openAIStreamChunk
+				if err := json.Unmarshal([]byte(dataStr), &chunk); err == nil {
+					if len(chunk.Choices) > 0 {
+						delta := chunk.Choices[0].Delta.Content
+						fReason := harness.FinishReason(chunk.Choices[0].FinishReason)
+						if !yield(StreamChunk{Delta: delta, FinishReason: fReason}, nil) {
+							return
+						}
+					}
+				}
+			}
+		}
+
+		if err := scanner.Err(); err != nil {
+			yield(StreamChunk{}, err)
+		}
+	}
+}
