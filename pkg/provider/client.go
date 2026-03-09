@@ -1,12 +1,15 @@
 package provider
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
+	"iter"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/thanhauco/ai-harness/pkg/harness"
@@ -59,6 +62,15 @@ type openAIChatResponse struct {
 	} `json:"usage"`
 }
 
+type openAIStreamChunk struct {
+	Choices []struct {
+		Delta struct {
+			Content string `json:"content"`
+		} `json:"delta"`
+		FinishReason string `json:"finish_reason"`
+	} `json:"choices"`
+}
+
 type HTTPProvider struct {
 	name string
 	opts ClientOptions
@@ -76,6 +88,13 @@ func NewHTTPProvider(name string, opts ClientOptions) *HTTPProvider {
 
 func (h *HTTPProvider) Name() string {
 	return h.name
+}
+
+func (h *HTTPProvider) setHeaders(req *http.Request) {
+	req.Header.Set("Content-Type", "application/json")
+	if h.opts.APIKey != "" {
+		req.Header.Set("Authorization", "Bearer "+h.opts.APIKey)
+	}
 }
 
 func (h *HTTPProvider) Generate(ctx context.Context, prompt *harness.Prompt) (*harness.Response, error) {
@@ -97,10 +116,7 @@ func (h *HTTPProvider) Generate(ctx context.Context, prompt *harness.Prompt) (*h
 		return nil, fmt.Errorf("create request: %w", err)
 	}
 
-	req.Header.Set("Content-Type", "application/json")
-	if h.opts.APIKey != "" {
-		req.Header.Set("Authorization", "Bearer "+h.opts.APIKey)
-	}
+	h.setHeaders(req)
 
 	start := time.Now()
 	resp, err := h.opts.HTTPClient.Do(req)
@@ -141,21 +157,6 @@ func (h *HTTPProvider) Generate(ctx context.Context, prompt *harness.Prompt) (*h
 	}, nil
 }
 
-import (
-	"bufio"
-	"iter"
-	"strings"
-)
-
-type openAIStreamChunk struct {
-	Choices []struct {
-		Delta struct {
-			Content string `json:"content"`
-		} `json:"delta"`
-		FinishReason string `json:"finish_reason"`
-	} `json:"choices"`
-}
-
 func (h *HTTPProvider) Stream(ctx context.Context, prompt *harness.Prompt) iter.Seq2[StreamChunk, error] {
 	return func(yield func(StreamChunk, error) bool) {
 		reqBody := openAIChatRequest{
@@ -178,10 +179,7 @@ func (h *HTTPProvider) Stream(ctx context.Context, prompt *harness.Prompt) iter.
 			return
 		}
 
-		req.Header.Set("Content-Type", "application/json")
-		if h.opts.APIKey != "" {
-			req.Header.Set("Authorization", "Bearer "+h.opts.APIKey)
-		}
+		h.setHeaders(req)
 
 		resp, err := h.opts.HTTPClient.Do(req)
 		if err != nil {
