@@ -231,3 +231,10 @@ func (h *HTTPProvider) Stream(ctx context.Context, prompt *harness.Prompt) iter.
 		}
 	}
 }
+
+// AnthropicMessagesPayload formats requests according to the Anthropic Messages spec.
+type AnthropicMessagesPayload struct {
+	Model     string            `json:"model"`
+	Messages  []harness.Message `json:"messages"`
+	MaxTokens int               `json:"max_tokens"`
+}
