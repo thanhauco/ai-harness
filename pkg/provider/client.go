@@ -238,3 +238,10 @@ type AnthropicMessagesPayload struct {
 	Messages  []harness.Message `json:"messages"`
 	MaxTokens int               `json:"max_tokens"`
 }
+
+func isPrematureStreamTermination(err error) bool {
+	if err == nil {
+		return false
+	}
+	return strings.Contains(err.Error(), "unexpected EOF") || strings.Contains(err.Error(), "connection closed")
+}
