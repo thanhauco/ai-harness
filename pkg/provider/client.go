@@ -245,3 +245,6 @@ func isPrematureStreamTermination(err error) bool {
 	}
 	return strings.Contains(err.Error(), "unexpected EOF") || strings.Contains(err.Error(), "connection closed")
 }
+
+// MaxBufferSize defines 64KB scan buffer for large SSE token payloads.
+const MaxStreamBufferSize = 64 * 1024
