@@ -58,3 +58,20 @@ func NewCircuitBreaker(cfg CircuitBreakerConfig) *CircuitBreaker {
 		state: StateClosed,
 	}
 }
+
+var ErrCircuitBreakerOpen = errors.New("circuit breaker is open; upstream requests rejected")
+
+func (cb *CircuitBreaker) State() CircuitState {
+	cb.mu.Lock()
+	defer cb.mu.Unlock()
+	cb.checkStateTransition()
+	return cb.state
+}
+
+func (cb *CircuitBreaker) checkStateTransition() {
+	if cb.state == StateOpen && time.Since(cb.lastFailureTime) >= cb.cfg.RecoveryTimeout {
+		cb.state = StateHalfOpen
+		cb.halfOpenCalls = 0
+		cb.successes = 0
+	}
+}
