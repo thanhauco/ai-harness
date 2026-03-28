@@ -133,3 +133,9 @@ func (cb *CircuitBreaker) Execute(op func() error) error {
 
 	return nil
 }
+
+func (cb *CircuitBreaker) SetOnStateChange(fn func(from, to CircuitState)) {
+	cb.mu.Lock()
+	defer cb.mu.Unlock()
+	cb.onStateChange = fn
+}
