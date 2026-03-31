@@ -40,3 +40,14 @@ func (tb *TokenBucket) refill() {
 	}
 	tb.lastRefill = now
 }
+
+func (tb *TokenBucket) Allow(cost float64) bool {
+	tb.mu.Lock()
+	defer tb.mu.Unlock()
+	tb.refill()
+	if tb.tokens >= cost {
+		tb.tokens -= cost
+		return true
+	}
+	return false
+}
