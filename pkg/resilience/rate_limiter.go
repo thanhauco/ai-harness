@@ -51,3 +51,27 @@ func (tb *TokenBucket) Allow(cost float64) bool {
 	}
 	return false
 }
+
+var ErrRateLimitExceeded = errors.New("rate limit wait canceled or timed out")
+
+func (tb *TokenBucket) Wait(ctx context.Context, cost float64) error {
+	for {
+		tb.mu.Lock()
+		tb.refill()
+		if tb.tokens >= cost {
+			tb.tokens -= cost
+			tb.mu.Unlock()
+			return nil
+		}
+
+		missing := cost - tb.tokens
+		waitTime := time.Duration((missing / tb.rate) * float64(time.Second))
+		tb.mu.Unlock()
+
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(waitTime):
+		}
+	}
+}
