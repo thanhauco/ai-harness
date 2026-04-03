@@ -61,3 +61,19 @@ func TestCircuitBreaker_Recovery(t *testing.T) {
 		t.Fatalf("expected CLOSED state after probe successes, got %s", cb.State())
 	}
 }
+
+func TestTokenBucket_Burst(t *testing.T) {
+	tb := NewTokenBucket(10, 5)
+
+	// Consume entire burst capacity of 5 tokens
+	for i := 0; i < 5; i++ {
+		if !tb.Allow(1) {
+			t.Fatalf("expected token %d to be allowed", i+1)
+		}
+	}
+
+	// 6th token must fail immediately
+	if tb.Allow(1) {
+		t.Fatal("expected 6th token to exceed burst capacity")
+	}
+}
