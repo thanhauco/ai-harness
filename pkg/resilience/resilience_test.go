@@ -77,3 +77,16 @@ func TestTokenBucket_Burst(t *testing.T) {
 		t.Fatal("expected 6th token to exceed burst capacity")
 	}
 }
+
+func TestTokenBucket_WaitCancellation(t *testing.T) {
+	tb := NewTokenBucket(1, 1)
+	_ = tb.Allow(1) // drain bucket
+
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
+	defer cancel()
+
+	err := tb.Wait(ctx, 10) // needs 10 seconds, timeout is 20ms
+	if err == nil {
+		t.Fatal("expected timeout cancellation error")
+	}
+}
