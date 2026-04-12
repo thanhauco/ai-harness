@@ -90,3 +90,29 @@ func TestTokenBucket_WaitCancellation(t *testing.T) {
 		t.Fatal("expected timeout cancellation error")
 	}
 }
+
+func TestExecuteWithRetry_SuccessAfterTransient(t *testing.T) {
+	attempts := 0
+	cfg := RetryConfig{
+		MaxAttempts:     3,
+		InitialInterval: 5 * time.Millisecond,
+		MaxInterval:     20 * time.Millisecond,
+		Multiplier:      1.5,
+		Jitter:          false,
+	}
+
+	err := ExecuteWithRetry(context.Background(), cfg, func(ctx context.Context) error {
+		attempts++
+		if attempts < 3 {
+			return errors.New("temporary 503")
+		}
+		return nil
+	}, IsStandardRetryableError)
+
+	if err != nil {
+		t.Fatalf("expected eventual success, got error: %v", err)
+	}
+	if attempts != 3 {
+		t.Fatalf("expected 3 attempts, got %d", attempts)
+	}
+}
