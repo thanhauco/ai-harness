@@ -116,3 +116,21 @@ func TestExecuteWithRetry_SuccessAfterTransient(t *testing.T) {
 		t.Fatalf("expected 3 attempts, got %d", attempts)
 	}
 }
+
+func TestExecuteWithRetry_NonRetryableAborts(t *testing.T) {
+	attempts := 0
+	cfg := DefaultRetryConfig()
+	fatalErr := errors.New("invalid api key 401")
+
+	err := ExecuteWithRetry(context.Background(), cfg, func(ctx context.Context) error {
+		attempts++
+		return fatalErr
+	}, IsStandardRetryableError)
+
+	if !errors.Is(err, fatalErr) {
+		t.Fatalf("expected fatalErr, got %v", err)
+	}
+	if attempts != 1 {
+		t.Fatalf("expected 1 attempt before abort, got %d", attempts)
+	}
+}
