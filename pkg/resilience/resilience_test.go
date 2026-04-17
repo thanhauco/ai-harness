@@ -134,3 +134,26 @@ func TestExecuteWithRetry_NonRetryableAborts(t *testing.T) {
 		t.Fatalf("expected 1 attempt before abort, got %d", attempts)
 	}
 }
+
+func TestPolicy_ConcurrencyStress(t *testing.T) {
+	policy := &Policy{
+		Limiter: NewTokenBucket(1000, 1000),
+		Breaker: NewCircuitBreaker(CircuitBreakerConfig{
+			FailureThreshold: 50,
+			RecoveryTimeout:  10 * time.Millisecond,
+		}),
+		Retry: DefaultRetryConfig(),
+	}
+
+	var wg sync.WaitGroup
+	for i := 0; i < 100; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_ = policy.Execute(context.Background(), func(ctx context.Context) error {
+				return nil
+			})
+		}()
+	}
+	wg.Wait()
+}
