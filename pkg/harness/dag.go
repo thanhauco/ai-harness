@@ -30,3 +30,17 @@ func NewDAG() *DAG {
 		steps: make(map[string]Step),
 	}
 }
+
+func (d *DAG) AddStep(step Step) error {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	if step.ID == "" {
+		return errors.New("step ID cannot be empty")
+	}
+	if _, exists := d.steps[step.ID]; exists {
+		return fmt.Errorf("duplicate step ID: %s", step.ID)
+	}
+	d.steps[step.ID] = step
+	return nil
+}
