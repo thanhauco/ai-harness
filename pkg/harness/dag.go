@@ -98,3 +98,13 @@ func (d *DAG) TopologicalSort() ([][]string, error) {
 
 	return tiers, nil
 }
+
+// PipelineSummary aggregates results of a DAG execution.
+type PipelineSummary struct {
+	TotalSteps int                     `json:"total_steps"`
+	Completed  int                     `json:"completed"`
+	Failed     int                     `json:"failed"`
+	Skipped    int                     `json:"skipped"`
+	Duration   time.Duration           `json:"duration"`
+	Records    map[string]*StepRecord  `json:"records"`
+}
