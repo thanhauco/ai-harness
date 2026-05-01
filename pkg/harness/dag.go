@@ -108,3 +108,115 @@ type PipelineSummary struct {
 	Duration   time.Duration           `json:"duration"`
 	Records    map[string]*StepRecord  `json:"records"`
 }
+
+func (d *DAG) Execute(ctx context.Context, state *ExecutionState, maxConcurrency int) (*PipelineSummary, error) {
+	tiers, err := d.TopologicalSort()
+	if err != nil {
+		return nil, err
+	}
+
+	if maxConcurrency <= 0 {
+		maxConcurrency = 4
+	}
+
+	start := time.Now()
+	summary := &PipelineSummary{
+		TotalSteps: len(d.steps),
+		Records:    make(map[string]*StepRecord),
+	}
+
+	for _, tier := range tiers {
+		if err := ctx.Err(); err != nil {
+			summary.Duration = time.Since(start)
+			return summary, err
+		}
+
+		sem := make(chan struct{}, maxConcurrency)
+		var wg sync.WaitGroup
+		errChan := make(chan error, len(tier))
+
+		for _, stepID := range tier {
+			d.mu.RLock()
+			step := d.steps[stepID]
+			d.mu.RUnlock()
+
+			if step.SkipIf != nil && step.SkipIf(state) {
+				rec := &StepRecord{
+					StepID:     stepID,
+					Status:     StepSkipped,
+					StartedAt:  time.Now(),
+					FinishedAt: time.Now(),
+				}
+				state.RecordStep(rec)
+				summary.Skipped++
+				summary.Records[stepID] = rec
+				continue
+			}
+
+			wg.Add(1)
+			sem <- struct{}{}
+
+			go func(s Step) {
+				defer wg.Done()
+				defer func() { <-sem }()
+
+				rec := &StepRecord{
+					StepID:    s.ID,
+					Status:    StepRunning,
+					StartedAt: time.Now(),
+				}
+
+				if d.beforeStep != nil {
+					d.beforeStep(s.ID, state)
+				}
+
+				out, execErr := s.Execute(ctx, state)
+				rec.FinishedAt = time.Now()
+				rec.Duration = rec.FinishedAt.Sub(rec.StartedAt)
+
+				if d.afterStep != nil {
+					d.afterStep(s.ID, out, execErr, rec.Duration)
+				}
+
+				if execErr != nil {
+					rec.Status = StepFailed
+					rec.Error = execErr.Error()
+					state.RecordStep(rec)
+					errChan <- fmt.Errorf("step %s failed: %w", s.ID, execErr)
+				} else {
+					rec.Status = StepCompleted
+					rec.Output = out
+					state.RecordStep(rec)
+					state.Set("output:"+s.ID, out)
+				}
+			}(step)
+		}
+
+		wg.Wait()
+		close(errChan)
+
+		if len(errChan) > 0 {
+			var firstErr error
+			for e := range errChan {
+				if firstErr == nil {
+					firstErr = e
+				}
+				summary.Failed++
+			}
+			summary.Duration = time.Since(start)
+			return summary, firstErr
+		}
+
+		for _, stepID := range tier {
+			if rec, ok := state.GetRecord(stepID); ok {
+				summary.Records[stepID] = rec
+				if rec.Status == StepCompleted {
+					summary.Completed++
+				}
+			}
+		}
+	}
+
+	summary.Duration = time.Since(start)
+	return summary, nil
+}
