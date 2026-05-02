@@ -65,3 +65,42 @@ func TestDAG_TopologicalSort_Diamond(t *testing.T) {
 		t.Fatalf("tier 2 mismatch: %v", tiers[2])
 	}
 }
+
+func TestDAG_ExecuteParallel(t *testing.T) {
+	dag := NewDAG()
+	state := NewExecutionState()
+
+	var running atomic.Int32
+	var maxObserved atomic.Int32
+
+	for i := 0; i < 4; i++ {
+		stepID := fmt.Sprintf("parallel_%d", i)
+		_ = dag.AddStep(Step{
+			ID: stepID,
+			Execute: func(ctx context.Context, s *ExecutionState) (any, error) {
+				cur := running.Add(1)
+				for {
+					oldMax := maxObserved.Load()
+					if cur <= oldMax || maxObserved.CompareAndSwap(oldMax, cur) {
+						break
+					}
+				}
+				time.Sleep(20 * time.Millisecond)
+				running.Add(-1)
+				return "ok", nil
+			},
+		})
+	}
+
+	summary, err := dag.Execute(context.Background(), state, 4)
+	if err != nil {
+		t.Fatalf("unexpected execute error: %v", err)
+	}
+
+	if summary.Completed != 4 {
+		t.Fatalf("expected 4 completed, got %d", summary.Completed)
+	}
+	if maxObserved.Load() < 2 {
+		t.Fatalf("expected parallel execution (>=2 concurrent), observed %d", maxObserved.Load())
+	}
+}
