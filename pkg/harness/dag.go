@@ -220,3 +220,14 @@ func (d *DAG) Execute(ctx context.Context, state *ExecutionState, maxConcurrency
 	summary.Duration = time.Since(start)
 	return summary, nil
 }
+
+// SetHooks configures pre- and post-step execution hooks.
+func (d *DAG) SetHooks(
+	before func(stepID string, state *ExecutionState),
+	after func(stepID string, out any, err error, duration time.Duration),
+) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	d.beforeStep = before
+	d.afterStep = after
+}
