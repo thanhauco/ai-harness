@@ -104,3 +104,30 @@ func TestDAG_ExecuteParallel(t *testing.T) {
 		t.Fatalf("expected parallel execution (>=2 concurrent), observed %d", maxObserved.Load())
 	}
 }
+
+func TestDAG_FailurePropagation(t *testing.T) {
+	dag := NewDAG()
+	state := NewExecutionState()
+
+	_ = dag.AddStep(Step{
+		ID: "step1",
+		Execute: func(ctx context.Context, s *ExecutionState) (any, error) {
+			return nil, errors.New("step1 boom")
+		},
+	})
+	_ = dag.AddStep(Step{
+		ID:           "step2",
+		Dependencies: []string{"step1"},
+		Execute: func(ctx context.Context, s *ExecutionState) (any, error) {
+			return "should not run", nil
+		},
+	})
+
+	summary, err := dag.Execute(context.Background(), state, 2)
+	if err == nil {
+		t.Fatal("expected failure error, got nil")
+	}
+	if summary.Completed != 0 {
+		t.Fatalf("expected 0 completed steps, got %d", summary.Completed)
+	}
+}
