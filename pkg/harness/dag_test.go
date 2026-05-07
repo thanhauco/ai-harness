@@ -131,3 +131,32 @@ func TestDAG_FailurePropagation(t *testing.T) {
 		t.Fatalf("expected 0 completed steps, got %d", summary.Completed)
 	}
 }
+
+func TestDAG_Hooks(t *testing.T) {
+	dag := NewDAG()
+	state := NewExecutionState()
+
+	var beforeCount atomic.Int32
+	var afterCount atomic.Int32
+
+	dag.SetHooks(
+		func(id string, s *ExecutionState) { beforeCount.Add(1) },
+		func(id string, out any, err error, dur time.Duration) { afterCount.Add(1) },
+	)
+
+	_ = dag.AddStep(Step{
+		ID: "stepA",
+		Execute: func(ctx context.Context, s *ExecutionState) (any, error) {
+			return "doneA", nil
+		},
+	})
+
+	_, err := dag.Execute(context.Background(), state, 1)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if beforeCount.Load() != 1 || afterCount.Load() != 1 {
+		t.Fatalf("hooks count mismatch: before=%d, after=%d", beforeCount.Load(), afterCount.Load())
+	}
+}
