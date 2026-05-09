@@ -160,3 +160,29 @@ func TestDAG_Hooks(t *testing.T) {
 		t.Fatalf("hooks count mismatch: before=%d, after=%d", beforeCount.Load(), afterCount.Load())
 	}
 }
+
+func TestDAG_SkipIf(t *testing.T) {
+	dag := NewDAG()
+	state := NewExecutionState()
+	state.Set("skip_next", true)
+
+	_ = dag.AddStep(Step{
+		ID: "step_conditional",
+		SkipIf: func(s *ExecutionState) bool {
+			v, _ := s.Get("skip_next")
+			return v == true
+		},
+		Execute: func(ctx context.Context, s *ExecutionState) (any, error) {
+			return "ran", nil
+		},
+	})
+
+	summary, err := dag.Execute(context.Background(), state, 1)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if summary.Skipped != 1 {
+		t.Fatalf("expected 1 skipped step, got %d", summary.Skipped)
+	}
+}
