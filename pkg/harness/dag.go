@@ -231,3 +231,10 @@ func (d *DAG) SetHooks(
 	d.beforeStep = before
 	d.afterStep = after
 }
+
+// StepCount returns the total number of registered steps.
+func (d *DAG) StepCount() int {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+	return len(d.steps)
+}
