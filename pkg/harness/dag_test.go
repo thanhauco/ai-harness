@@ -186,3 +186,19 @@ func TestDAG_SkipIf(t *testing.T) {
 		t.Fatalf("expected 1 skipped step, got %d", summary.Skipped)
 	}
 }
+
+func BenchmarkDAG_TopologicalSort(b *testing.B) {
+	dag := NewDAG()
+	for i := 0; i < 50; i++ {
+		step := Step{ID: fmt.Sprintf("s%d", i)}
+		if i > 0 {
+			step.Dependencies = []string{fmt.Sprintf("s%d", i-1)}
+		}
+		_ = dag.AddStep(step)
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = dag.TopologicalSort()
+	}
+}
