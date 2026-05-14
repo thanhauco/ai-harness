@@ -238,3 +238,11 @@ func (d *DAG) StepCount() int {
 	defer d.mu.RUnlock()
 	return len(d.steps)
 }
+
+// HasStep returns true if stepID is registered.
+func (d *DAG) HasStep(stepID string) bool {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+	_, exists := d.steps[stepID]
+	return exists
+}
