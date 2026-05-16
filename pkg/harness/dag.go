@@ -246,3 +246,10 @@ func (d *DAG) HasStep(stepID string) bool {
 	_, exists := d.steps[stepID]
 	return exists
 }
+
+// Clear resets all registered steps in the DAG.
+func (d *DAG) Clear() {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	d.steps = make(map[string]Step)
+}
