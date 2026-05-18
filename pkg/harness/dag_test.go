@@ -202,3 +202,15 @@ func BenchmarkDAG_TopologicalSort(b *testing.B) {
 		_, _ = dag.TopologicalSort()
 	}
 }
+
+func TestDAG_Clear(t *testing.T) {
+	dag := NewDAG()
+	_ = dag.AddStep(Step{ID: "s1"})
+	if dag.StepCount() != 1 {
+		t.Fatal("expected 1 step")
+	}
+	dag.Clear()
+	if dag.StepCount() != 0 {
+		t.Fatal("expected 0 steps after clear")
+	}
+}
