@@ -28,3 +28,24 @@ func TestToolDefinition_Validation(t *testing.T) {
 		t.Fatalf("unexpected error for valid arguments: %v", errValid)
 	}
 }
+
+func TestToolDefinition_EnumAndTypeValidation(t *testing.T) {
+	tool := ToolDefinition{
+		Name: "set_mode",
+		Parameters: map[string]ParameterSchema{
+			"mode": {Type: "string", Required: true, Enum: []string{"read", "write"}},
+		},
+	}
+
+	// Invalid enum
+	err := tool.ValidateArguments(map[string]any{"mode": "admin"})
+	if err == nil || !strings.Contains(err.Error(), "not in allowed enum") {
+		t.Fatalf("expected enum validation failure, got %v", err)
+	}
+
+	// Type mismatch (number instead of string)
+	errType := tool.ValidateArguments(map[string]any{"mode": 123})
+	if errType == nil || !strings.Contains(errType.Error(), "must be a string") {
+		t.Fatalf("expected type mismatch error, got %v", errType)
+	}
+}
