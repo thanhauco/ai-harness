@@ -62,3 +62,9 @@ func (t *ToolDefinition) ValidateArguments(args map[string]any) error {
 	}
 	return nil
 }
+
+// Tool represents an executable function callable by an agent.
+type Tool interface {
+	Definition() ToolDefinition
+	Execute(ctx context.Context, args map[string]any) (any, error)
+}
