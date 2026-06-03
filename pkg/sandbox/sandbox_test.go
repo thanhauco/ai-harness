@@ -49,3 +49,32 @@ func TestToolDefinition_EnumAndTypeValidation(t *testing.T) {
 		t.Fatalf("expected type mismatch error, got %v", errType)
 	}
 }
+
+type dummyTool struct{}
+
+func (d *dummyTool) Definition() ToolDefinition {
+	return ToolDefinition{Name: "dummy"}
+}
+
+func (d *dummyTool) Execute(ctx context.Context, args map[string]any) (any, error) {
+	return "dummy executed", nil
+}
+
+func TestRegistry_RegisterAndExecute(t *testing.T) {
+	reg := NewRegistry()
+	err := reg.Register(&dummyTool{})
+	if err != nil {
+		t.Fatalf("unexpected register error: %v", err)
+	}
+
+	// Duplicate
+	errDup := reg.Register(&dummyTool{})
+	if errDup == nil {
+		t.Fatal("expected duplicate error")
+	}
+
+	out, errExec := reg.Execute(context.Background(), "dummy", nil)
+	if errExec != nil || out != "dummy executed" {
+		t.Fatalf("unexpected execution result: %v, %v", out, errExec)
+	}
+}
