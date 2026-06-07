@@ -31,3 +31,18 @@ func DefaultSandboxPolicy() SandboxPolicy {
 		MaxOutputBytes: 64 * 1024, // 64 KB
 	}
 }
+
+// Runner executes subprocess commands under sandbox policy constraints.
+type Runner struct {
+	policy SandboxPolicy
+}
+
+func NewRunner(policy SandboxPolicy) *Runner {
+	if policy.Timeout <= 0 {
+		policy.Timeout = 5 * time.Second
+	}
+	if policy.MaxOutputBytes <= 0 {
+		policy.MaxOutputBytes = 64 * 1024
+	}
+	return &Runner{policy: policy}
+}
