@@ -101,3 +101,15 @@ func (r *Runner) ExecuteCommand(ctx context.Context, cmdName string, args ...str
 		Duration: duration,
 	}, err
 }
+
+func (r *Runner) IsCommandAllowed(cmdName string) bool {
+	if len(r.policy.AllowedCommands) == 0 {
+		return true
+	}
+	for _, a := range r.policy.AllowedCommands {
+		if a == cmdName {
+			return true
+		}
+	}
+	return false
+}
