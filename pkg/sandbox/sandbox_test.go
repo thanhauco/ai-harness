@@ -78,3 +78,16 @@ func TestRegistry_RegisterAndExecute(t *testing.T) {
 		t.Fatalf("unexpected execution result: %v, %v", out, errExec)
 	}
 }
+
+func TestRunner_Timeout(t *testing.T) {
+	policy := SandboxPolicy{
+		Timeout: 20 * time.Millisecond,
+	}
+	runner := NewRunner(policy)
+
+	// 'sleep 1' exceeds 20ms timeout
+	_, err := runner.ExecuteCommand(context.Background(), "sleep", "1")
+	if err == nil {
+		t.Fatal("expected timeout error")
+	}
+}
