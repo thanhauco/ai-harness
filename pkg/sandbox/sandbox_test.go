@@ -91,3 +91,16 @@ func TestRunner_Timeout(t *testing.T) {
 		t.Fatal("expected timeout error")
 	}
 }
+
+func TestRunner_DisallowedCommand(t *testing.T) {
+	policy := SandboxPolicy{
+		Timeout:         time.Second,
+		AllowedCommands: []string{"echo"},
+	}
+	runner := NewRunner(policy)
+
+	_, err := runner.ExecuteCommand(context.Background(), "ls")
+	if err == nil || !strings.Contains(err.Error(), "disallowed") {
+		t.Fatalf("expected disallowed command error, got %v", err)
+	}
+}
