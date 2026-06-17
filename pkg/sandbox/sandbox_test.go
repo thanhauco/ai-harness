@@ -104,3 +104,21 @@ func TestRunner_DisallowedCommand(t *testing.T) {
 		t.Fatalf("expected disallowed command error, got %v", err)
 	}
 }
+
+func TestCalculatorTool(t *testing.T) {
+	calc := &CalculatorTool{}
+
+	res, err := calc.Execute(context.Background(), map[string]any{"expression": "42 * 2"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if res != 84.0 {
+		t.Fatalf("expected 84, got %v", res)
+	}
+
+	// Division by zero
+	_, errDiv := calc.Execute(context.Background(), map[string]any{"expression": "10 / 0"})
+	if errDiv == nil {
+		t.Fatal("expected division by zero error")
+	}
+}
