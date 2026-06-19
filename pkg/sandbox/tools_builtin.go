@@ -54,3 +54,36 @@ func (c *CalculatorTool) Execute(ctx context.Context, args map[string]any) (any,
 
 	return nil, fmt.Errorf("unsupported expression format: %q", expr)
 }
+
+// JSONFilterTool extracts values from a JSON string.
+type JSONFilterTool struct{}
+
+func (j *JSONFilterTool) Definition() ToolDefinition {
+	return ToolDefinition{
+		Name:        "json_filter",
+		Description: "Extracts a key from a JSON object string",
+		Parameters: map[string]ParameterSchema{
+			"json_data": {Type: "string", Required: true},
+			"key":       {Type: "string", Required: true},
+		},
+	}
+}
+
+func (j *JSONFilterTool) Execute(ctx context.Context, args map[string]any) (any, error) {
+	raw, ok1 := args["json_data"].(string)
+	key, ok2 := args["key"].(string)
+	if !ok1 || !ok2 {
+		return nil, fmt.Errorf("missing or invalid arguments")
+	}
+
+	var data map[string]any
+	if err := json.Unmarshal([]byte(raw), &data); err != nil {
+		return nil, fmt.Errorf("invalid json: %w", err)
+	}
+
+	val, exists := data[key]
+	if !exists {
+		return nil, fmt.Errorf("key %q not found in json", key)
+	}
+	return val, nil
+}
