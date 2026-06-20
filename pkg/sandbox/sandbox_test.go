@@ -122,3 +122,16 @@ func TestCalculatorTool(t *testing.T) {
 		t.Fatal("expected division by zero error")
 	}
 }
+
+func TestJSONFilterTool(t *testing.T) {
+	filter := &JSONFilterTool{}
+	data := `{"status":"success","code":200}`
+
+	res, err := filter.Execute(context.Background(), map[string]any{
+		"json_data": data,
+		"key":       "status",
+	})
+	if err != nil || res != "success" {
+		t.Fatalf("unexpected filter output: %v, %v", res, err)
+	}
+}
