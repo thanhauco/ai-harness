@@ -87,3 +87,31 @@ func (j *JSONFilterTool) Execute(ctx context.Context, args map[string]any) (any,
 	}
 	return val, nil
 }
+
+// TextTransformTool applies case modifications to input text.
+type TextTransformTool struct{}
+
+func (t *TextTransformTool) Definition() ToolDefinition {
+	return ToolDefinition{
+		Name:        "text_transform",
+		Description: "Transforms text casing (upper, lower, title)",
+		Parameters: map[string]ParameterSchema{
+			"text": {Type: "string", Required: true},
+			"op":   {Type: "string", Required: true, Enum: []string{"upper", "lower"}},
+		},
+	}
+}
+
+func (t *TextTransformTool) Execute(ctx context.Context, args map[string]any) (any, error) {
+	text, _ := args["text"].(string)
+	op, _ := args["op"].(string)
+
+	switch op {
+	case "upper":
+		return strings.ToUpper(text), nil
+	case "lower":
+		return strings.ToLower(text), nil
+	default:
+		return text, nil
+	}
+}
