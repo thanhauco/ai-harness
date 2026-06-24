@@ -135,3 +135,14 @@ func TestJSONFilterTool(t *testing.T) {
 		t.Fatalf("unexpected filter output: %v, %v", res, err)
 	}
 }
+
+func TestTextTransformTool(t *testing.T) {
+	tool := &TextTransformTool{}
+	res, err := tool.Execute(context.Background(), map[string]any{
+		"text": "hello world",
+		"op":   "upper",
+	})
+	if err != nil || res != "HELLO WORLD" {
+		t.Fatalf("expected HELLO WORLD, got %v, err=%v", res, err)
+	}
+}
