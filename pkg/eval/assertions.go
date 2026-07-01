@@ -40,3 +40,41 @@ func (a *ExactMatchAssertion) Check(resp *harness.Response) AssertionResult {
 		Message: fmt.Sprintf("expected %q, got %q", a.Expected, resp.Content),
 	}
 }
+
+type ContainsAssertion struct {
+	Substring string
+}
+
+func (a *ContainsAssertion) Name() string {
+	return "contains"
+}
+
+func (a *ContainsAssertion) Check(resp *harness.Response) AssertionResult {
+	if strings.Contains(resp.Content, a.Substring) {
+		return AssertionResult{Name: a.Name(), Passed: true, Message: "contains required substring"}
+	}
+	return AssertionResult{
+		Name:    a.Name(),
+		Passed:  false,
+		Message: fmt.Sprintf("missing required substring %q", a.Substring),
+	}
+}
+
+type NotContainsAssertion struct {
+	Forbidden string
+}
+
+func (a *NotContainsAssertion) Name() string {
+	return "not_contains"
+}
+
+func (a *NotContainsAssertion) Check(resp *harness.Response) AssertionResult {
+	if !strings.Contains(resp.Content, a.Forbidden) {
+		return AssertionResult{Name: a.Name(), Passed: true, Message: "does not contain forbidden substring"}
+	}
+	return AssertionResult{
+		Name:    a.Name(),
+		Passed:  false,
+		Message: fmt.Sprintf("found forbidden substring %q", a.Forbidden),
+	}
+}
