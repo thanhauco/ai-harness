@@ -78,3 +78,30 @@ func (a *NotContainsAssertion) Check(resp *harness.Response) AssertionResult {
 		Message: fmt.Sprintf("found forbidden substring %q", a.Forbidden),
 	}
 }
+
+type RegexAssertion struct {
+	Pattern *regexp.Regexp
+}
+
+func NewRegexAssertion(pattern string) (*RegexAssertion, error) {
+	re, err := regexp.Compile(pattern)
+	if err != nil {
+		return nil, err
+	}
+	return &RegexAssertion{Pattern: re}, nil
+}
+
+func (a *RegexAssertion) Name() string {
+	return "regex_match"
+}
+
+func (a *RegexAssertion) Check(resp *harness.Response) AssertionResult {
+	if a.Pattern.MatchString(resp.Content) {
+		return AssertionResult{Name: a.Name(), Passed: true, Message: "matches regex pattern"}
+	}
+	return AssertionResult{
+		Name:    a.Name(),
+		Passed:  false,
+		Message: fmt.Sprintf("content does not match regex %q", a.Pattern.String()),
+	}
+}
