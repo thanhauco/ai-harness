@@ -105,3 +105,17 @@ func (a *RegexAssertion) Check(resp *harness.Response) AssertionResult {
 		Message: fmt.Sprintf("content does not match regex %q", a.Pattern.String()),
 	}
 }
+
+type JSONValidAssertion struct{}
+
+func (a *JSONValidAssertion) Name() string {
+	return "json_valid"
+}
+
+func (a *JSONValidAssertion) Check(resp *harness.Response) AssertionResult {
+	var js any
+	if err := json.Unmarshal([]byte(resp.Content), &js); err == nil {
+		return AssertionResult{Name: a.Name(), Passed: true, Message: "valid json"}
+	}
+	return AssertionResult{Name: a.Name(), Passed: false, Message: "invalid json format"}
+}
