@@ -119,3 +119,22 @@ func (a *JSONValidAssertion) Check(resp *harness.Response) AssertionResult {
 	}
 	return AssertionResult{Name: a.Name(), Passed: false, Message: "invalid json format"}
 }
+
+type LatencyAssertion struct {
+	MaxDurationMs int64
+}
+
+func (a *LatencyAssertion) Name() string {
+	return "latency_budget"
+}
+
+func (a *LatencyAssertion) Check(resp *harness.Response) AssertionResult {
+	if resp.Usage.DurationMs <= a.MaxDurationMs {
+		return AssertionResult{Name: a.Name(), Passed: true, Message: "latency within budget"}
+	}
+	return AssertionResult{
+		Name:    a.Name(),
+		Passed:  false,
+		Message: fmt.Sprintf("latency %dms exceeds budget %dms", resp.Usage.DurationMs, a.MaxDurationMs),
+	}
+}
