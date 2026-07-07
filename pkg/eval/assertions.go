@@ -138,3 +138,22 @@ func (a *LatencyAssertion) Check(resp *harness.Response) AssertionResult {
 		Message: fmt.Sprintf("latency %dms exceeds budget %dms", resp.Usage.DurationMs, a.MaxDurationMs),
 	}
 }
+
+type TokenLimitAssertion struct {
+	MaxTotalTokens int
+}
+
+func (a *TokenLimitAssertion) Name() string {
+	return "token_limit"
+}
+
+func (a *TokenLimitAssertion) Check(resp *harness.Response) AssertionResult {
+	if resp.Usage.TotalTokens <= a.MaxTotalTokens {
+		return AssertionResult{Name: a.Name(), Passed: true, Message: "token usage within limit"}
+	}
+	return AssertionResult{
+		Name:    a.Name(),
+		Passed:  false,
+		Message: fmt.Sprintf("token count %d exceeds limit %d", resp.Usage.TotalTokens, a.MaxTotalTokens),
+	}
+}
