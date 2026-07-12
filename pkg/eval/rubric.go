@@ -30,3 +30,39 @@ func NewRubric(passThreshold float64, criteria ...Criterion) *Rubric {
 		PassThreshold: passThreshold,
 	}
 }
+
+func (r *Rubric) Evaluate(response string) RubricScore {
+	var totalWeight float64
+	var weightedSum float64
+	feedback := make(map[string]string)
+
+	for _, c := range r.Criteria {
+		w := c.Weight
+		if w <= 0 {
+			w = 1.0
+		}
+		totalWeight += w
+
+		score, fb := c.Evaluator(response)
+		if score < 0 {
+			score = 0
+		}
+		if score > 1.0 {
+			score = 1.0
+		}
+
+		weightedSum += score * w
+		feedback[c.Name] = fb
+	}
+
+	overall := 0.0
+	if totalWeight > 0 {
+		overall = (weightedSum / totalWeight) * 100.0
+	}
+
+	return RubricScore{
+		OverallScore: overall,
+		Passed:       overall >= r.PassThreshold,
+		Feedback:     feedback,
+	}
+}
