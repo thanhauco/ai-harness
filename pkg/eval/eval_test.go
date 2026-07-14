@@ -42,3 +42,31 @@ func TestAssertions(t *testing.T) {
 		t.Fatalf("expected latency within 200ms to pass")
 	}
 }
+
+func TestRubric_Evaluate(t *testing.T) {
+	rubric := NewRubric(75.0,
+		Criterion{
+			Name:   "has_solution",
+			Weight: 2.0,
+			Evaluator: func(resp string) (float64, string) {
+				return 1.0, "solution provided"
+			},
+		},
+		Criterion{
+			Name:   "conciseness",
+			Weight: 1.0,
+			Evaluator: func(resp string) (float64, string) {
+				return 0.5, "moderately concise"
+			},
+		},
+	)
+
+	score := rubric.Evaluate("some response")
+	// (2.0*1.0 + 1.0*0.5) / 3.0 = 2.5 / 3.0 = 83.33%
+	if score.OverallScore < 83.0 || score.OverallScore > 84.0 {
+		t.Fatalf("expected ~83.33%%, got %f", score.OverallScore)
+	}
+	if !score.Passed {
+		t.Fatal("expected rubric pass")
+	}
+}
