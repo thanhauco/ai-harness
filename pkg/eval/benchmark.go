@@ -149,3 +149,15 @@ func (s *Suite) Run(ctx context.Context, p provider.Provider, concurrency int) (
 
 	return report, nil
 }
+
+// Percentiles computes p50, p90, and p99 from a slice of latencies.
+func ComputePercentiles(latencies []int64) (p50, p90, p99 int64) {
+	if len(latencies) == 0 {
+		return 0, 0, 0
+	}
+	sorted := make([]int64, len(latencies))
+	copy(sorted, latencies)
+	sort.Slice(sorted, func(i, j int) bool { return sorted[i] < sorted[j] })
+
+	return sorted[len(sorted)*50/100], sorted[len(sorted)*90/100], sorted[len(sorted)*99/100]
+}
