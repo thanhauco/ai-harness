@@ -161,3 +161,24 @@ func ComputePercentiles(latencies []int64) (p50, p90, p99 int64) {
 
 	return sorted[len(sorted)*50/100], sorted[len(sorted)*90/100], sorted[len(sorted)*99/100]
 }
+
+// MarkdownTable renders the SuiteReport as a GitHub-flavored Markdown table.
+func (r *SuiteReport) MarkdownTable() string {
+	var sb strings.Builder
+	sb.WriteString("| Case ID | Status | Duration | Tokens | Details |\n")
+	sb.WriteString("|---------|--------|----------|--------|---------|\n")
+
+	for _, c := range r.Results {
+		status := "PASS"
+		if !c.Passed {
+			status = "FAIL"
+		}
+		sb.WriteString(fmt.Sprintf("| %s | %s | %dms | %d | %d assertions |\n",
+			c.CaseID, status, c.DurationMs, c.Tokens, len(c.Assertions)))
+	}
+
+	sb.WriteString(fmt.Sprintf("\n**Summary:** %d/%d Passed (%.1f%%) | P50: %dms | P99: %dms | Total Tokens: %d\n",
+		r.Passed, r.TotalCases, r.PassRate, r.P50Ms, r.P99Ms, r.TotalTokens))
+
+	return sb.String()
+}
