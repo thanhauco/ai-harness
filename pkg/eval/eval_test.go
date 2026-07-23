@@ -70,3 +70,31 @@ func TestRubric_Evaluate(t *testing.T) {
 		t.Fatal("expected rubric pass")
 	}
 }
+
+func TestSuite_Run(t *testing.T) {
+	mockP := provider.NewMockProvider("bench-mock", "expected output answer")
+	cases := []TestCase{
+		{
+			ID:     "case_1",
+			Prompt: harness.NewPrompt(harness.NewUserMessage("test")),
+			Assertions: []Assertion{
+				&ContainsAssertion{Substring: "expected output"},
+			},
+		},
+	}
+
+	suite := NewSuite(cases...)
+	report, err := suite.Run(context.Background(), mockP, 2)
+	if err != nil {
+		t.Fatalf("unexpected benchmark suite error: %v", err)
+	}
+
+	if report.TotalCases != 1 || report.Passed != 1 {
+		t.Fatalf("report mismatch: %+v", report)
+	}
+
+	md := report.MarkdownTable()
+	if !strings.Contains(md, "case_1") {
+		t.Fatalf("markdown table missing case_1")
+	}
+}
