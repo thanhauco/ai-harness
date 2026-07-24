@@ -182,3 +182,12 @@ func (r *SuiteReport) MarkdownTable() string {
 
 	return sb.String()
 }
+
+// DetectRegression compares a new report against a baseline pass rate.
+func DetectRegression(baselineRate, newRate float64, tolerance float64) (hasRegressed bool, diff float64) {
+	diff = newRate - baselineRate
+	if diff < -tolerance {
+		return true, diff
+	}
+	return false, diff
+}
