@@ -98,3 +98,15 @@ func TestSuite_Run(t *testing.T) {
 		t.Fatalf("markdown table missing case_1")
 	}
 }
+
+func TestDetectRegression(t *testing.T) {
+	regressed, diff := DetectRegression(95.0, 85.0, 2.0)
+	if !regressed || diff != -10.0 {
+		t.Fatalf("expected regression detected: %v, diff=%f", regressed, diff)
+	}
+
+	noRegression, _ := DetectRegression(90.0, 89.5, 1.0)
+	if noRegression {
+		t.Fatal("did not expect regression within tolerance")
+	}
+}
