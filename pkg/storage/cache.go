@@ -40,3 +40,10 @@ func NewLRUCache(capacity int, ttl time.Duration) *LRUCache {
 		evictList: list.New(),
 	}
 }
+
+// HashKey generates a deterministic SHA-256 hash for any value.
+func HashKey(v any) string {
+	b, _ := json.Marshal(v)
+	h := sha256.Sum256(b)
+	return hex.EncodeToString(h[:])
+}
