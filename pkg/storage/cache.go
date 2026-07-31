@@ -47,3 +47,68 @@ func HashKey(v any) string {
 	h := sha256.Sum256(b)
 	return hex.EncodeToString(h[:])
 }
+
+func (c *LRUCache) Get(key string) (any, bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	elem, exists := c.items[key]
+	if !exists {
+		c.misses++
+		return nil, false
+	}
+
+	entry := elem.Value.(*cacheEntry)
+	if time.Now().After(entry.expiresAt) {
+		c.removeElement(elem)
+		c.misses++
+		return nil, false
+	}
+
+	c.evictList.MoveToFront(elem)
+	c.hits++
+	return entry.value, true
+}
+
+func (c *LRUCache) Set(key string, val any) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if elem, exists := c.items[key]; exists {
+		c.evictList.MoveToFront(elem)
+		elem.Value.(*cacheEntry).value = val
+		elem.Value.(*cacheEntry).expiresAt = time.Now().Add(c.ttl)
+		return
+	}
+
+	if c.evictList.Len() >= c.capacity {
+		c.evictOldest()
+	}
+
+	entry := &cacheEntry{
+		key:       key,
+		value:     val,
+		expiresAt: time.Now().Add(c.ttl),
+	}
+	elem := c.evictList.PushFront(entry)
+	c.items[key] = elem
+}
+
+func (c *LRUCache) evictOldest() {
+	elem := c.evictList.Back()
+	if elem != nil {
+		c.removeElement(elem)
+	}
+}
+
+func (c *LRUCache) removeElement(elem *list.Element) {
+	c.evictList.Remove(elem)
+	entry := elem.Value.(*cacheEntry)
+	delete(c.items, entry.key)
+}
+
+func (c *LRUCache) Stats() (hits, misses int64) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.hits, c.misses
+}
