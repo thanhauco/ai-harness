@@ -52,3 +52,35 @@ func (m *MemorySessionStore) Load(ctx context.Context, sessionID string) (*Sessi
 	}
 	return s, nil
 }
+
+// JSONLWriter appends sessions as JSON Lines to disk.
+type JSONLWriter struct {
+	mu   sync.Mutex
+	file *os.File
+}
+
+func NewJSONLWriter(path string) (*JSONLWriter, error) {
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	if err != nil {
+		return nil, err
+	}
+	return &JSONLWriter{file: f}, nil
+}
+
+func (w *JSONLWriter) WriteSession(s *SessionRecord) error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	b, err := json.Marshal(s)
+	if err != nil {
+		return err
+	}
+	b = append(b, byte(10))
+	_, err = w.file.Write(b)
+	return err
+}
+
+func (w *JSONLWriter) Close() error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	return w.file.Close()
+}
