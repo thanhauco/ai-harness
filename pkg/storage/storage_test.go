@@ -41,3 +41,28 @@ func TestLRUCache_EvictionAndTTL(t *testing.T) {
 		t.Fatal("expected k1 to be expired after TTL")
 	}
 }
+
+func TestMemorySessionStore(t *testing.T) {
+	store := NewMemorySessionStore()
+	session := &SessionRecord{
+		SessionID: "sess_1",
+		Messages:  []any{"hello"},
+		CreatedAt: time.Now(),
+	}
+
+	err := store.Save(context.Background(), session)
+	if err != nil {
+		t.Fatalf("save error: %v", err)
+	}
+
+	loaded, err := store.Load(context.Background(), "sess_1")
+	if err != nil || loaded.SessionID != "sess_1" {
+		t.Fatalf("load error: %v", err)
+	}
+
+	// Missing
+	_, errMissing := store.Load(context.Background(), "non_existent")
+	if errMissing != os.ErrNotExist {
+		t.Fatalf("expected ErrNotExist, got %v", errMissing)
+	}
+}
