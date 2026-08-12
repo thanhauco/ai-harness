@@ -53,3 +53,8 @@ func NewProductionLogger() *slog.Logger {
 	baseHandler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo})
 	return slog.New(NewRedactingHandler(baseHandler))
 }
+
+func MaskString(input string) string {
+	re := regexp.MustCompile(`(sk-[a-zA-Z0-9_-]{20,}|Bearer\s+[a-zA-Z0-9_\.\-]+|[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)`)
+	return re.ReplaceAllString(input, "[REDACTED]")
+}
