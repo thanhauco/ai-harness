@@ -57,3 +57,49 @@ func TestRunner_CacheHit(t *testing.T) {
 		t.Fatalf("expected exactly 1 provider invocation, got %d", caller.calls)
 	}
 }
+
+type faultyCaller struct {
+	attempts int
+}
+
+func (f *faultyCaller) Name() string { return "faulty" }
+func (f *faultyCaller) Generate(ctx context.Context, p *Prompt) (*Response, error) {
+	f.attempts++
+	if f.attempts < 2 {
+		return nil, errors.New("temporary 503 service unavailable")
+	}
+	return &Response{
+		ID:      "recovered",
+		Content: "recovered output",
+		Usage:   TokenUsage{TotalTokens: 12},
+	}, nil
+}
+
+func TestRunner_ResilienceRecovery(t *testing.T) {
+	caller := &faultyCaller{}
+	policy := &resilience.Policy{
+		Retry: resilience.RetryConfig{
+			MaxAttempts:     3,
+			InitialInterval: 5 * time.Millisecond,
+			MaxInterval:     20 * time.Millisecond,
+			Multiplier:      1.5,
+		},
+	}
+
+	runner := NewRunner(RunnerConfig{
+		Provider: caller,
+		Policy:   policy,
+	})
+
+	resp, err := runner.ExecutePrompt(context.Background(), NewPrompt(NewUserMessage("test")))
+	if err != nil {
+		t.Fatalf("expected runner to recover from transient error: %v", err)
+	}
+
+	if resp.Content != "recovered output" {
+		t.Fatalf("unexpected content: %s", resp.Content)
+	}
+	if caller.attempts != 2 {
+		t.Fatalf("expected 2 attempts before success, got %d", caller.attempts)
+	}
+}
