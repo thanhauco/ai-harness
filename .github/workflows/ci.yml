@@ -8,10 +8,11 @@ on:
 
 jobs:
   test:
-    name: Test & Lint
-    runs-on: ubuntu-latest
+    name: Build & Test
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
+        os: [ ubuntu-latest, macos-latest ]
         go: [ '1.24', '1.25' ]
     steps:
       - name: Checkout Code
@@ -23,8 +24,14 @@ jobs:
           go-version: ${{ matrix.go }}
           cache: true
 
-      - name: Build
-        run: go build -v ./...
+      - name: Format Check
+        run: test -z "$(gofmt -l .)"
 
-      - name: Unit Tests & Race Detection
+      - name: Build Binary
+        run: go build -v ./cmd/aih
+
+      - name: Run Tests with Race Detector
         run: go test -v -race -covermode=atomic ./...
+
+      - name: Run Benchmarks
+        run: go test -bench=. -benchmem ./...
