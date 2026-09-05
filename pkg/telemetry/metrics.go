@@ -34,11 +34,11 @@ func (m *Metrics) RecordCircuitTrip() {
 }
 
 type MetricsSnapshot struct {
-	Requests    int64   `json:"requests"`
-	Errors      int64   `json:"errors"`
-	ErrorRate   float64 `json:"error_rate"`
-	AvgLatencyMs float64`json:"avg_latency_ms"`
-	TotalTokens int64   `json:"total_tokens"`
+	Requests     int64   `json:"requests"`
+	Errors       int64   `json:"errors"`
+	ErrorRate    float64 `json:"error_rate"`
+	AvgLatencyMs float64 `json:"avg_latency_ms"`
+	TotalTokens  int64   `json:"total_tokens"`
 }
 
 func (m *Metrics) Snapshot() MetricsSnapshot {

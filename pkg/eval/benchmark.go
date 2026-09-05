@@ -32,16 +32,16 @@ type CaseResult struct {
 
 // SuiteReport contains aggregated benchmark outcomes.
 type SuiteReport struct {
-	TotalCases int          `json:"total_cases"`
-	Passed     int          `json:"passed"`
-	Failed     int          `json:"failed"`
-	PassRate   float64      `json:"pass_rate"`
-	TotalTime  time.Duration`json:"total_time"`
-	P50Ms      int64        `json:"p50_ms"`
-	P90Ms      int64        `json:"p90_ms"`
-	P99Ms      int64        `json:"p99_ms"`
-	TotalTokens int         `json:"total_tokens"`
-	Results    []CaseResult `json:"results"`
+	TotalCases  int           `json:"total_cases"`
+	Passed      int           `json:"passed"`
+	Failed      int           `json:"failed"`
+	PassRate    float64       `json:"pass_rate"`
+	TotalTime   time.Duration `json:"total_time"`
+	P50Ms       int64         `json:"p50_ms"`
+	P90Ms       int64         `json:"p90_ms"`
+	P99Ms       int64         `json:"p99_ms"`
+	TotalTokens int           `json:"total_tokens"`
+	Results     []CaseResult  `json:"results"`
 }
 
 type Suite struct {

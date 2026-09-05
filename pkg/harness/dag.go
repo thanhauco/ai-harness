@@ -101,12 +101,12 @@ func (d *DAG) TopologicalSort() ([][]string, error) {
 
 // PipelineSummary aggregates results of a DAG execution.
 type PipelineSummary struct {
-	TotalSteps int                     `json:"total_steps"`
-	Completed  int                     `json:"completed"`
-	Failed     int                     `json:"failed"`
-	Skipped    int                     `json:"skipped"`
-	Duration   time.Duration           `json:"duration"`
-	Records    map[string]*StepRecord  `json:"records"`
+	TotalSteps int                    `json:"total_steps"`
+	Completed  int                    `json:"completed"`
+	Failed     int                    `json:"failed"`
+	Skipped    int                    `json:"skipped"`
+	Duration   time.Duration          `json:"duration"`
+	Records    map[string]*StepRecord `json:"records"`
 }
 
 func (d *DAG) Execute(ctx context.Context, state *ExecutionState, maxConcurrency int) (*PipelineSummary, error) {
